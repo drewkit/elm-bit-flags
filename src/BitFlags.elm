@@ -1,9 +1,10 @@
 module BitFlags exposing (..)
 
 import Array exposing (Array)
+import Set exposing (Set)
 
 
-type alias BitFlagMap =
+type alias BitFlagSettings =
     Array (Maybe String)
 
 
@@ -21,33 +22,56 @@ transformEmptyToNothing str =
             Nothing
 
 
-init : Int -> List String -> BitFlagMap
-init bitLimit rawFlags =
+initSettings : Int -> List String -> Result String BitFlagSettings
+initSettings bitLimit rawFlags =
     let
-        flagArray : Array String
-        flagArray =
+        flagsWithoutEmptyBitSpaces : List String
+        flagsWithoutEmptyBitSpaces =
+            List.map String.trim rawFlags
+                |> List.filter (\s -> not (String.isEmpty s))
+
+        uniqueFlags : Set String
+        uniqueFlags =
+            flagsWithoutEmptyBitSpaces
+                |> Set.fromList
+
+        flagsWithEmptyBitSpaces : Array String
+        flagsWithEmptyBitSpaces =
             rawFlags
                 |> Array.fromList
+
+        flagMap : Array (Maybe String)
+        flagMap =
+            Array.initialize bitLimit (\n -> Array.get n flagsWithEmptyBitSpaces)
+                |> Array.map transformEmptyToNothing
     in
-    Array.initialize bitLimit (\n -> Array.get n flagArray)
-        |> Array.map transformEmptyToNothing
+    if Set.size uniqueFlags /= List.length flagsWithoutEmptyBitSpaces then
+        Err "Duplicate flags detected"
+
+    else
+        Ok flagMap
 
 
-hasFlag : BitFlagMap -> Int -> Bool
-hasFlag flags pos =
-    case Array.get pos flags of
-        Just _ ->
-            True
-
-        Nothing ->
-            False
+createFlag : BitFlagSettings -> String -> Result String BitFlagSettings
+createFlag settings flag =
+    Ok settings
 
 
-showEnabledFlags : BitFlagMap -> Int -> List String
-showEnabledFlags bitFlagMap register =
-    [ "bathroom", "cleaning", "laundry" ]
+deleteFlag : BitFlagSettings -> String -> BitFlagSettings
+deleteFlag settings flag =
+    settings
 
 
-addToRegister : BitFlagMap -> String -> Int -> Int
+showEnabledFlagsOnRegister : BitFlagSettings -> Int -> List String
+showEnabledFlagsOnRegister settings register =
+    [ "placeholder", "flags", "for now" ]
+
+
+addToRegister : BitFlagSettings -> String -> Int -> Int
 addToRegister _ _ _ =
-    56
+    42
+
+
+removeFromRegister : BitFlagSettings -> String -> Int -> Int
+removeFromRegister _ _ _ =
+    42
