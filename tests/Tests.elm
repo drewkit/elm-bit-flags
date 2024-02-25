@@ -103,6 +103,13 @@ testCreateFlag =
                         |> Result.andThen (\setting -> createFlag "maroon" setting)
                     )
             )
+        , test "errors out on pre-existing flag"
+            (\_ ->
+                Expect.err
+                    (initSettings { bitLimit = 4, flags = [ "one", "", "three", "" ] }
+                        |> Result.andThen (\setting -> createFlag "one" setting)
+                    )
+            )
         , test "errors out on empty flag"
             (\_ ->
                 Expect.err
@@ -151,16 +158,16 @@ testUpdateFlag =
         , test "eliminates case sensitivy in query"
             (\_ ->
                 Expect.equal
-                    (initSettings { bitLimit = 4, flags = [ "dog", "one fish", "two fish", "" ] })
-                    (initSettings { bitLimit = 4, flags = [ "mouse", "one fish", "two fish", "" ] }
+                    (initSettings { bitLimit = 4, flags = [ "mouse", "one fish", "two fish", "" ] })
+                    (initSettings { bitLimit = 4, flags = [ "dog", "one fish", "two fish", "" ] }
                         |> Result.andThen (\setting -> Ok (updateFlag "dOG" "mouse" setting))
                     )
             )
         , test "eliminates case sensitivy in updated value"
             (\_ ->
                 Expect.equal
-                    (initSettings { bitLimit = 4, flags = [ "dog", "one fish", "two fish", "" ] })
-                    (initSettings { bitLimit = 4, flags = [ "mouse", "one fish", "two fish", "" ] }
+                    (initSettings { bitLimit = 4, flags = [ "mouse", "one fish", "two fish", "" ] })
+                    (initSettings { bitLimit = 4, flags = [ "dog", "one fish", "two fish", "" ] }
                         |> Result.andThen (\setting -> Ok (updateFlag "dog" "mouSE" setting))
                     )
             )
@@ -228,56 +235,74 @@ testShowEnabledFlagsOnRegister =
         [ test "runs"
             (\_ -> Expect.equal [ "purple" ] (showEnabledFlags 128))
         , test "handles multiple bit slots"
-            (\_ -> Expect.equal [ "red", "purple" ] (showEnabledFlags 130))
+            (\_ -> Expect.equal [ "red", "purple" ] (showEnabledFlags 129))
         , test "ignores empty bit slots"
-            (\_ -> Expect.equal [ "red", "purple" ] (showEnabledFlags 134))
-        , test "will only operate with bits that are within scope of the bit limit"
-            (\_ -> Expect.equal [ "red" ] (showEnabledFlags ((2 ^ (bitLimit + 1)) + 2)))
+            (\_ -> Expect.equal [ "red", "purple" ] (showEnabledFlags 133))
+        , test "handles more bit slots"
+            (\_ -> Expect.equal [ "red", "blue", "purple" ] (showEnabledFlags 137))
         ]
 
 
 enableFlagOnRegister =
-    flipFlag bitFlagSettings
+    enableFlag bitFlagSettings
 
 
 testEnableFlagOnRegister : Test
 testEnableFlagOnRegister =
-    Test.describe "BitFlags.addToRegister"
+    Test.describe "BitFlags.enableFlag"
         [ test "run1"
             (\_ -> Expect.equal 8 (enableFlagOnRegister "blue" 0))
         , test "run2"
             (\_ -> Expect.equal 10 (enableFlagOnRegister "blue" 2))
         , test "no changes to register when flag is not present on map"
             (\_ -> Expect.equal 2 (enableFlagOnRegister "poppycock" 2))
-        , test "enabled bits on register for nonexistent flags will also be corrected"
-            (\_ -> Expect.equal 0 (enableFlagOnRegister "poppycock" 4))
+        , test "is idempotent"
+            (\_ -> Expect.equal 8 (enableFlagOnRegister "blue" 8))
         ]
 
 
 disableFlagOnRegister =
-    flipFlag bitFlagSettings
+    disableFlag bitFlagSettings
 
 
 testDisableFlagOnRegister : Test
 testDisableFlagOnRegister =
-    Test.describe "BitFlags.removeFromRegister"
+    Test.describe "BitFlags.disableFlag"
         [ test "run1"
             (\_ -> Expect.equal 0 (disableFlagOnRegister "blue" 8))
         , test "run2"
             (\_ -> Expect.equal 2 (disableFlagOnRegister "blue" 10))
         , test "no changes to register when flag is not present on map"
             (\_ -> Expect.equal 2 (disableFlagOnRegister "poppycock" 2))
-        , test "enabled bits on register for nonexistent flags will also be corrected"
-            (\_ -> Expect.equal 0 (disableFlagOnRegister "poppycock" 4))
+        , test "is idempotent"
+            (\_ -> Expect.equal 0 (disableFlagOnRegister "blue" 0))
+        ]
+
+
+flipFlagOnRegister =
+    flipFlag bitFlagSettings
+
+
+testFlipFlagOnRegister : Test
+testFlipFlagOnRegister =
+    Test.describe "BitFlags.flipFlag"
+        [ test "run1"
+            (\_ -> Expect.equal 0 (flipFlagOnRegister "blue" 8))
+        , test "run2"
+            (\_ -> Expect.equal 2 (flipFlagOnRegister "blue" 10))
+        , test "no changes to register when flag is not present on map"
+            (\_ -> Expect.equal 2 (flipFlagOnRegister "poppycock" 2))
+        , test "run4"
+            (\_ -> Expect.equal 8 (flipFlagOnRegister "blue" 0))
         ]
 
 
 testShowAllFlags : Test
 testShowAllFlags =
-    Test.describe "BitFlags.showAllFlags"
+    Test.describe "BitFlags.allFlags"
         [ test "run1"
             (\_ ->
-                Expect.equal (showAllFlags bitFlagSettings)
+                Expect.equal (allFlags bitFlagSettings)
                     [ "red"
                     , "black"
                     , "blue"
