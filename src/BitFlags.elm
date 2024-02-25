@@ -1,6 +1,7 @@
 module BitFlags exposing (..)
 
 import Array exposing (Array)
+import Bitwise
 import Set exposing (Set)
 
 
@@ -31,9 +32,10 @@ initSettings config =
     let
         flags : List String
         flags =
-            List.map String.trim config.flags
+            config.flags
+                |> List.map String.trim
                 |> List.filter (\s -> not (String.isEmpty s))
-                |> List.map (\s -> String.toLower s)
+                |> List.map String.toLower
 
         uniqueFlags : Set String
         uniqueFlags =
@@ -43,6 +45,8 @@ initSettings config =
         flagsWithEmptyBitSpaces : Array String
         flagsWithEmptyBitSpaces =
             config.flags
+                |> List.map (\s -> String.trim s)
+                |> List.map (\s -> String.toLower s)
                 |> Array.fromList
 
         flagMap : Array (Maybe String)
@@ -87,19 +91,75 @@ enabledFlags settings register =
 
 
 enableFlag : BitFlagSettings -> String -> Int -> Int
-enableFlag _ _ _ =
-    42
+enableFlag settings flag register =
+    case findFlagIndex (Array.toIndexedList settings) flag of
+        Just index ->
+            Bitwise.or register (2 ^ index)
+
+        Nothing ->
+            register
 
 
-disableFlag : BitFlagSettings -> String -> Int -> Int
-disableFlag _ _ _ =
-    42
+flipFlag : BitFlagSettings -> String -> Int -> Int
+flipFlag settings flag register =
+    case findFlagIndex (Array.toIndexedList settings) flag of
+        Just index ->
+            Bitwise.xor register (2 ^ index)
+
+        Nothing ->
+            register
 
 
 query : BitFlagSettings -> List String -> List String -> Int -> Bool
-query settings whiteList blackList register =
-    -- Bitwise AND operator for both whitelist and blacklist
-    -- if whitelist is bit spaces 1 and 2, then REGISTER & 3 == 3 for a match
-    -- if blacklist is bit spaces 3 and 4, then REGISTER & 12 == 0 for a match
-    -- to summarize for this scenario => (REGISTER & 3 == 3) AND (REGISTER & 12 == 0) returns True
-    False
+query settings whitelist blacklist register =
+    let
+        flagIndexFinder =
+            findFlagIndex (Array.toIndexedList settings)
+
+        registerBuilder chosenList =
+            chosenList
+                |> Set.fromList
+                |> Set.toList
+                |> List.map (\flag -> flagIndexFinder flag)
+                |> List.foldl
+                    (\maybeIndex acc ->
+                        case maybeIndex of
+                            Just bitIndex ->
+                                acc + 2 ^ bitIndex
+
+                            Nothing ->
+                                acc
+                    )
+                    0
+
+        whitelistRegister =
+            registerBuilder whitelist
+
+        blacklistRegister =
+            registerBuilder blacklist
+    in
+    (Bitwise.and register whitelistRegister == whitelistRegister)
+        && (Bitwise.and register blacklistRegister == 0)
+
+
+
+-- Helper functions
+
+
+findFlagIndex : List ( Int, Maybe String ) -> String -> Maybe Int
+findFlagIndex list target =
+    case list of
+        ( index, maybeVal ) :: rest ->
+            case maybeVal of
+                Just val ->
+                    if val == target then
+                        Just index
+
+                    else
+                        findFlagIndex rest target
+
+                Nothing ->
+                    findFlagIndex rest target
+
+        [] ->
+            Nothing

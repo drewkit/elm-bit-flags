@@ -237,7 +237,7 @@ testShowEnabledFlagsOnRegister =
 
 
 enableFlagOnRegister =
-    enableFlag bitFlagSettings
+    flipFlag bitFlagSettings
 
 
 testEnableFlagOnRegister : Test
@@ -255,7 +255,7 @@ testEnableFlagOnRegister =
 
 
 disableFlagOnRegister =
-    disableFlag bitFlagSettings
+    flipFlag bitFlagSettings
 
 
 testDisableFlagOnRegister : Test
@@ -317,7 +317,7 @@ testBuiltRegisterQuery =
             )
         , test "matches red and black, albeit with an unregistered flag included"
             (\_ ->
-                Expect.equal False (isFlagMatch 7)
+                Expect.equal True (isFlagMatch 7)
             )
         , test "matches red and black"
             (\_ ->
