@@ -1,12 +1,24 @@
-module BitFlags exposing (..)
+module BitFlags exposing
+    ( BitFlagSettings
+    , allFlags
+    , createFlag
+    , deleteFlag
+    , disableFlag
+    , enableFlag
+    , enabledFlags
+    , flipFlag
+    , initSettings
+    , query
+    , updateFlag
+    )
 
 import Array exposing (Array)
 import Bitwise
 import Set exposing (Set)
 
 
-type alias BitFlagSettings =
-    Array (Maybe String)
+type BitFlagSettings
+    = BitFlagSettings (Array (Maybe String))
 
 
 
@@ -69,7 +81,7 @@ initSettings config =
                     config.bitLimit
                     (\n -> Array.get n flagsWithEmptyBitSpaces)
         in
-        Ok (fullBitSpaceFlagArray |> Array.map transformEmptyFlagStringToNothingVal)
+        Ok <| BitFlagSettings <| (fullBitSpaceFlagArray |> Array.map transformEmptyFlagStringToNothingVal)
 
 
 createFlag : String -> BitFlagSettings -> Result String BitFlagSettings
@@ -95,7 +107,7 @@ createFlag rawFlag settings =
                         Err "Out of bit empty bit spaces"
 
                     Just index ->
-                        Ok (Array.set index (Just flag) settings)
+                        Ok <| BitFlagSettings <| Array.set index (Just flag) settings
 
 
 updateFlag : String -> String -> BitFlagSettings -> BitFlagSettings
@@ -153,8 +165,8 @@ enabledFlags settings register =
 
 
 enableFlag : BitFlagSettings -> String -> Int -> Int
-enableFlag settings flag register =
-    case findFlagIndex (Array.toIndexedList settings) flag of
+enableFlag settings rawFlag register =
+    case findFlagIndex (Array.toIndexedList settings) (sanitizeFlag rawFlag) of
         Just index ->
             Bitwise.or register (2 ^ index)
 
@@ -163,8 +175,8 @@ enableFlag settings flag register =
 
 
 disableFlag : BitFlagSettings -> String -> Int -> Int
-disableFlag settings flag register =
-    case findFlagIndex (Array.toIndexedList settings) flag of
+disableFlag settings rawFlag register =
+    case findFlagIndex (Array.toIndexedList settings) (sanitizeFlag rawFlag) of
         Just index ->
             Bitwise.and (Bitwise.complement (2 ^ index)) register
 
@@ -173,8 +185,8 @@ disableFlag settings flag register =
 
 
 flipFlag : BitFlagSettings -> String -> Int -> Int
-flipFlag settings flag register =
-    case findFlagIndex (Array.toIndexedList settings) flag of
+flipFlag settings rawFlag register =
+    case findFlagIndex (Array.toIndexedList settings) (sanitizeFlag rawFlag) of
         Just index ->
             Bitwise.xor register (2 ^ index)
 
@@ -190,6 +202,7 @@ query settings whitelist blacklist register =
 
         registerBuilder chosenList =
             chosenList
+                |> List.map sanitizeFlag
                 |> Set.fromList
                 |> Set.toList
                 |> List.map (\flag -> flagIndexFinder flag)

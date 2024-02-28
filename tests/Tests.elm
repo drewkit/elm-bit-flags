@@ -55,7 +55,7 @@ testInitSettings =
                 Expect.err (BitFlags.initSettings { bitLimit = 3, flags = rawFlags })
             )
         , test "errors out on duplicate flags"
-            (\_ -> Expect.err (BitFlags.initSettings { bitLimit = 4, flags = "Red" :: "red" :: rawFlags }))
+            (\_ -> Expect.err (BitFlags.initSettings { bitLimit = 18, flags = "Red" :: "red" :: rawFlags }))
         ]
 
 
@@ -251,13 +251,13 @@ testEnableFlagOnRegister : Test
 testEnableFlagOnRegister =
     Test.describe "BitFlags.enableFlag"
         [ test "run1"
-            (\_ -> Expect.equal 8 (enableFlagOnRegister "blue" 0))
+            (\_ -> Expect.equal 8 (enableFlagOnRegister "Blue" 0))
         , test "run2"
-            (\_ -> Expect.equal 10 (enableFlagOnRegister "blue" 2))
+            (\_ -> Expect.equal 10 (enableFlagOnRegister "blue " 2))
         , test "no changes to register when flag is not present on map"
             (\_ -> Expect.equal 2 (enableFlagOnRegister "poppycock" 2))
         , test "is idempotent"
-            (\_ -> Expect.equal 8 (enableFlagOnRegister "blue" 8))
+            (\_ -> Expect.equal 8 (enableFlagOnRegister "bluE" 8))
         ]
 
 
@@ -269,7 +269,7 @@ testDisableFlagOnRegister : Test
 testDisableFlagOnRegister =
     Test.describe "BitFlags.disableFlag"
         [ test "run1"
-            (\_ -> Expect.equal 0 (disableFlagOnRegister "blue" 8))
+            (\_ -> Expect.equal 0 (disableFlagOnRegister "bluE " 8))
         , test "run2"
             (\_ -> Expect.equal 2 (disableFlagOnRegister "blue" 10))
         , test "no changes to register when flag is not present on map"
@@ -287,7 +287,7 @@ testFlipFlagOnRegister : Test
 testFlipFlagOnRegister =
     Test.describe "BitFlags.flipFlag"
         [ test "run1"
-            (\_ -> Expect.equal 0 (flipFlagOnRegister "blue" 8))
+            (\_ -> Expect.equal 0 (flipFlagOnRegister "bluE " 8))
         , test "run2"
             (\_ -> Expect.equal 2 (flipFlagOnRegister "blue" 10))
         , test "no changes to register when flag is not present on map"
@@ -318,12 +318,12 @@ testShowAllFlags =
 
 isFlagMatch : Int -> Bool
 isFlagMatch =
-    query bitFlagSettings [ "red", "red", "black", "magenta" ] [ "blue" ]
+    query bitFlagSettings [ "red", "Red", " blacK", "magenta" ] [ "blue" ]
 
 
 testBuiltRegisterQuery : Test
 testBuiltRegisterQuery =
-    Test.describe "BitFlags.buildRegisterQuery"
+    Test.describe "BitFlags.query"
         [ test "Provides Bool on bitmask match, ignoring duplicates (red) and unrecognized flags (magenta)"
             (\_ ->
                 Expect.equal True (isFlagMatch 3)
