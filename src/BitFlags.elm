@@ -2,6 +2,7 @@ module BitFlags exposing
     ( BitFlagSettings
     , allFlags
     , createFlag
+    , defaultSettings
     , deleteFlag
     , disableFlag
     , enableFlag
@@ -14,15 +15,13 @@ module BitFlags exposing
 
 import Array exposing (Array)
 import Bitwise
+import Helpers exposing (..)
+import Register exposing (..)
 import Set exposing (Set)
 
 
 type BitFlagSettings
     = BitFlagSettings (Array (Maybe String))
-
-
-
--- Flag Setting Functions
 
 
 duplicateFlagsFound : Array String -> Bool
@@ -44,7 +43,7 @@ duplicateFlagsFound rawFlags =
 
 
 allFlags : BitFlagSettings -> List String
-allFlags settings =
+allFlags (BitFlagSettings settings) =
     settings
         |> Array.toList
         |> List.foldr
@@ -59,6 +58,11 @@ allFlags settings =
             []
 
 
+defaultSettings : BitFlagSettings
+defaultSettings =
+    BitFlagSettings <| Array.fromList []
+
+
 initSettings : { bitLimit : Int, flags : List String } -> Result String BitFlagSettings
 initSettings config =
     let
@@ -71,6 +75,9 @@ initSettings config =
     if duplicateFlagsFound flagsWithEmptyBitSpaces then
         Err "Duplicate flags detected"
 
+    else if config.bitLimit > 32 then
+        Err "bitLimit cannot exceed 32 bits"
+
     else if Array.length flagsWithEmptyBitSpaces > config.bitLimit then
         Err "Flags list exceeds bit space limit"
 
@@ -81,11 +88,13 @@ initSettings config =
                     config.bitLimit
                     (\n -> Array.get n flagsWithEmptyBitSpaces)
         in
-        Ok <| BitFlagSettings <| (fullBitSpaceFlagArray |> Array.map transformEmptyFlagStringToNothingVal)
+        Ok <|
+            BitFlagSettings <|
+                (fullBitSpaceFlagArray |> Array.map transformEmptyFlagStringToNothingVal)
 
 
 createFlag : String -> BitFlagSettings -> Result String BitFlagSettings
-createFlag rawFlag settings =
+createFlag rawFlag (BitFlagSettings settings) =
     let
         flag =
             sanitizeFlag rawFlag
@@ -107,11 +116,13 @@ createFlag rawFlag settings =
                         Err "Out of bit empty bit spaces"
 
                     Just index ->
-                        Ok <| BitFlagSettings <| Array.set index (Just flag) settings
+                        Ok <|
+                            BitFlagSettings <|
+                                Array.set index (Just flag) settings
 
 
 updateFlag : String -> String -> BitFlagSettings -> BitFlagSettings
-updateFlag originalRawFlag updatedRawFlag settings =
+updateFlag originalRawFlag updatedRawFlag (BitFlagSettings settings) =
     let
         originalFlag =
             sanitizeFlag originalRawFlag
@@ -121,24 +132,24 @@ updateFlag originalRawFlag updatedRawFlag settings =
     in
     case findFlagIndex (Array.toIndexedList settings) originalFlag of
         Just index ->
-            Array.set index (Just updatedFlag) settings
+            BitFlagSettings <| Array.set index (Just updatedFlag) settings
 
         Nothing ->
-            settings
+            BitFlagSettings <| settings
 
 
 deleteFlag : String -> BitFlagSettings -> BitFlagSettings
-deleteFlag rawFlag settings =
+deleteFlag rawFlag (BitFlagSettings settings) =
     let
         flag =
             sanitizeFlag rawFlag
     in
     case findFlagIndex (Array.toIndexedList settings) flag of
         Just index ->
-            Array.set index Nothing settings
+            BitFlagSettings <| Array.set index Nothing settings
 
         Nothing ->
-            settings
+            BitFlagSettings <| settings
 
 
 
@@ -146,7 +157,7 @@ deleteFlag rawFlag settings =
 
 
 enabledFlags : BitFlagSettings -> Int -> List String
-enabledFlags settings register =
+enabledFlags (BitFlagSettings settings) register =
     List.foldr
         (\( flagIndex, maybeVal ) acc ->
             if flagEnabled (2 ^ flagIndex) register then
@@ -165,7 +176,7 @@ enabledFlags settings register =
 
 
 enableFlag : BitFlagSettings -> String -> Int -> Int
-enableFlag settings rawFlag register =
+enableFlag (BitFlagSettings settings) rawFlag register =
     case findFlagIndex (Array.toIndexedList settings) (sanitizeFlag rawFlag) of
         Just index ->
             Bitwise.or register (2 ^ index)
@@ -175,7 +186,7 @@ enableFlag settings rawFlag register =
 
 
 disableFlag : BitFlagSettings -> String -> Int -> Int
-disableFlag settings rawFlag register =
+disableFlag (BitFlagSettings settings) rawFlag register =
     case findFlagIndex (Array.toIndexedList settings) (sanitizeFlag rawFlag) of
         Just index ->
             Bitwise.and (Bitwise.complement (2 ^ index)) register
@@ -185,7 +196,7 @@ disableFlag settings rawFlag register =
 
 
 flipFlag : BitFlagSettings -> String -> Int -> Int
-flipFlag settings rawFlag register =
+flipFlag (BitFlagSettings settings) rawFlag register =
     case findFlagIndex (Array.toIndexedList settings) (sanitizeFlag rawFlag) of
         Just index ->
             Bitwise.xor register (2 ^ index)
@@ -195,7 +206,7 @@ flipFlag settings rawFlag register =
 
 
 query : BitFlagSettings -> List String -> List String -> Int -> Bool
-query settings whitelist blacklist register =
+query (BitFlagSettings settings) whitelist blacklist register =
     let
         flagIndexFinder =
             findFlagIndex (Array.toIndexedList settings)
@@ -225,67 +236,3 @@ query settings whitelist blacklist register =
     in
     (Bitwise.and register whitelistRegister == whitelistRegister)
         && (Bitwise.and register blacklistRegister == 0)
-
-
-
--- Helper functions
-
-
-sanitizeFlag : String -> String
-sanitizeFlag flag =
-    flag
-        |> String.trim
-        |> String.toLower
-
-
-transformEmptyFlagStringToNothingVal : Maybe String -> Maybe String
-transformEmptyFlagStringToNothingVal maybeFlag =
-    case maybeFlag of
-        Just flag ->
-            if String.isEmpty flag then
-                Nothing
-
-            else
-                Just flag
-
-        _ ->
-            Nothing
-
-
-flagEnabled : Int -> Int -> Bool
-flagEnabled flag register =
-    Bitwise.and flag register == flag
-
-
-findFirstNothing : List ( Int, Maybe String ) -> Maybe Int
-findFirstNothing list =
-    case list of
-        ( index, maybeVal ) :: rest ->
-            case maybeVal of
-                Just _ ->
-                    findFirstNothing rest
-
-                Nothing ->
-                    Just index
-
-        [] ->
-            Nothing
-
-
-findFlagIndex : List ( Int, Maybe String ) -> String -> Maybe Int
-findFlagIndex list target =
-    case list of
-        ( index, maybeVal ) :: rest ->
-            case maybeVal of
-                Just val ->
-                    if val == target then
-                        Just index
-
-                    else
-                        findFlagIndex rest target
-
-                Nothing ->
-                    findFlagIndex rest target
-
-        [] ->
-            Nothing

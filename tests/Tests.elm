@@ -1,6 +1,5 @@
 module Tests exposing (..)
 
-import Array exposing (Array)
 import BitFlags exposing (..)
 import Expect
 import Test exposing (..)
@@ -26,24 +25,7 @@ testInitSettings =
     Test.describe "BitFlags.initSettings"
         [ test "runs with empty bit spaces, eliminating case sensitivities"
             (\_ ->
-                Expect.equal
-                    (Ok
-                        (Array.fromList
-                            [ Just "red"
-                            , Just "black"
-                            , Nothing
-                            , Just "blue"
-                            , Just "green"
-                            , Nothing
-                            , Just "yellow"
-                            , Just "purple"
-                            , Just "pink"
-                            , Just "orange"
-                            , Nothing
-                            , Nothing
-                            ]
-                        )
-                    )
+                Expect.ok
                     (BitFlags.initSettings
                         { bitLimit = 12
                         , flags = rawFlags
@@ -54,24 +36,28 @@ testInitSettings =
             (\_ ->
                 Expect.err (BitFlags.initSettings { bitLimit = 3, flags = rawFlags })
             )
+        , test "bitLimit cannot exceed 32 bits"
+            (\_ ->
+                Expect.err (BitFlags.initSettings { bitLimit = 33, flags = rawFlags })
+            )
         , test "errors out on duplicate flags"
             (\_ -> Expect.err (BitFlags.initSettings { bitLimit = 18, flags = "Red" :: "red" :: rawFlags }))
         ]
 
 
-bitLimit : Int
-bitLimit =
-    32
-
-
 bitFlagSettings : BitFlagSettings
 bitFlagSettings =
-    case BitFlags.initSettings { bitLimit = bitLimit, flags = rawFlags } of
-        Ok settings ->
-            settings
+    let
+        bitLimit =
+            32
 
-        Err _ ->
-            Array.fromList []
+        settingsResult =
+            BitFlags.initSettings
+                { bitLimit = bitLimit
+                , flags = rawFlags
+                }
+    in
+    Result.withDefault defaultSettings settingsResult
 
 
 testCreateFlag : Test
@@ -224,13 +210,12 @@ testDeleteFlag =
         ]
 
 
-showEnabledFlags : Int -> List String
-showEnabledFlags =
-    BitFlags.enabledFlags bitFlagSettings
-
-
 testShowEnabledFlagsOnRegister : Test
 testShowEnabledFlagsOnRegister =
+    let
+        showEnabledFlags =
+            BitFlags.enabledFlags bitFlagSettings
+    in
     Test.describe "BitFlags.showEnabledFlagsOnRegister"
         [ test "runs"
             (\_ -> Expect.equal [ "purple" ] (showEnabledFlags 128))
@@ -243,12 +228,12 @@ testShowEnabledFlagsOnRegister =
         ]
 
 
-enableFlagOnRegister =
-    enableFlag bitFlagSettings
-
-
 testEnableFlagOnRegister : Test
 testEnableFlagOnRegister =
+    let
+        enableFlagOnRegister =
+            enableFlag bitFlagSettings
+    in
     Test.describe "BitFlags.enableFlag"
         [ test "run1"
             (\_ -> Expect.equal 8 (enableFlagOnRegister "Blue" 0))
@@ -261,12 +246,12 @@ testEnableFlagOnRegister =
         ]
 
 
-disableFlagOnRegister =
-    disableFlag bitFlagSettings
-
-
 testDisableFlagOnRegister : Test
 testDisableFlagOnRegister =
+    let
+        disableFlagOnRegister =
+            disableFlag bitFlagSettings
+    in
     Test.describe "BitFlags.disableFlag"
         [ test "run1"
             (\_ -> Expect.equal 0 (disableFlagOnRegister "bluE " 8))
@@ -279,12 +264,12 @@ testDisableFlagOnRegister =
         ]
 
 
-flipFlagOnRegister =
-    flipFlag bitFlagSettings
-
-
 testFlipFlagOnRegister : Test
 testFlipFlagOnRegister =
+    let
+        flipFlagOnRegister =
+            flipFlag bitFlagSettings
+    in
     Test.describe "BitFlags.flipFlag"
         [ test "run1"
             (\_ -> Expect.equal 0 (flipFlagOnRegister "bluE " 8))
@@ -353,10 +338,3 @@ testBuiltRegisterQuery =
                 Expect.equal False (isFlagMatch 58220)
             )
         ]
-
-
-
-{--
-- TODO enforce a package level bit limit, cause elm numbers get a little weird after a point
-- TODO settings must be configured in a way where users MUST set up BitFlagSettings through initSettings
---}

@@ -5,7 +5,8 @@ Once a flag is removed from bit flag settings, you are responsible for ensuring 
 
 ```
 settings =
-    initSettings {bitLimit = 5, flags = ["golf", "tennis", "hiking"]} 
+    initSettings {bitLimit = 5, flags = ["golf", "tennis", "hiking"]}
+        |> Result.withDefault defaultSettings
         |> createFlag "pickleball"
         |> updateFlag "hiking" "backpacking"
         |> deleteFlag "golf"
@@ -35,5 +36,6 @@ query settings ["pickleball", "tennis"] [] sampleRegister
 query settings ["pickleball"] ["tennis"] sampleRegister
 -- False
 
-
+query settings ["backpacking", "tennis"] [] sampleRegister
+-- False
 ```
