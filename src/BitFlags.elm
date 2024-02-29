@@ -4,13 +4,15 @@ module BitFlags exposing
     , BitFlagSettings, enabledFlags
     )
 
-{-| BitFlags
+{-| A package for handling Int values as bit flag registers.
 
-Set up Bit Flag Settings:
+
+## Initializing / Configuring Bit Flag Settings
 
 @docs initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags
 
-Perform Bit Flag operations on registers:
+
+## Performing Bit Flag operations on registers
 
 @docs enableFlag, disableFlag, flipFlag, match
 
