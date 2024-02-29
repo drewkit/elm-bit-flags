@@ -9,37 +9,17 @@ module BitFlags exposing
     , enabledFlags
     , flipFlag
     , initSettings
-    , query
+    , match
     , updateFlag
     )
 
 import Array exposing (Array)
 import Bitwise
-import Helpers exposing (..)
-import Register exposing (..)
 import Set exposing (Set)
 
 
 type BitFlagSettings
     = BitFlagSettings (Array (Maybe String))
-
-
-duplicateFlagsFound : Array String -> Bool
-duplicateFlagsFound rawFlags =
-    let
-        flags : Array String
-        flags =
-            rawFlags
-                |> Array.map sanitizeFlag
-                |> Array.filter (\s -> not (String.isEmpty s))
-
-        uniqueFlags : Set String
-        uniqueFlags =
-            flags
-                |> Array.toList
-                |> Set.fromList
-    in
-    Set.size uniqueFlags /= Array.length flags
 
 
 allFlags : BitFlagSettings -> List String
@@ -175,6 +155,12 @@ enabledFlags (BitFlagSettings settings) register =
         (Array.toIndexedList settings)
 
 
+
+{-
+   Enable a flag on a register.
+-}
+
+
 enableFlag : BitFlagSettings -> String -> Int -> Int
 enableFlag (BitFlagSettings settings) rawFlag register =
     case findFlagIndex (Array.toIndexedList settings) (sanitizeFlag rawFlag) of
@@ -183,6 +169,12 @@ enableFlag (BitFlagSettings settings) rawFlag register =
 
         Nothing ->
             register
+
+
+
+{-
+   Disable a flag on a register.
+-}
 
 
 disableFlag : BitFlagSettings -> String -> Int -> Int
@@ -195,6 +187,12 @@ disableFlag (BitFlagSettings settings) rawFlag register =
             register
 
 
+
+{-
+   Flip flag value on a register.
+-}
+
+
 flipFlag : BitFlagSettings -> String -> Int -> Int
 flipFlag (BitFlagSettings settings) rawFlag register =
     case findFlagIndex (Array.toIndexedList settings) (sanitizeFlag rawFlag) of
@@ -205,8 +203,14 @@ flipFlag (BitFlagSettings settings) rawFlag register =
             register
 
 
-query : BitFlagSettings -> List String -> List String -> Int -> Bool
-query (BitFlagSettings settings) whitelist blacklist register =
+
+{-
+   With a whitelist and blacklist of flags, determine if the register is a match
+-}
+
+
+match : BitFlagSettings -> List String -> List String -> Int -> Bool
+match (BitFlagSettings settings) whitelist blacklist register =
     let
         flagIndexFinder =
             findFlagIndex (Array.toIndexedList settings)
@@ -236,3 +240,85 @@ query (BitFlagSettings settings) whitelist blacklist register =
     in
     (Bitwise.and register whitelistRegister == whitelistRegister)
         && (Bitwise.and register blacklistRegister == 0)
+
+
+
+-- Helper Functions
+
+
+sanitizeFlag : String -> String
+sanitizeFlag flag =
+    flag
+        |> String.trim
+        |> String.toLower
+
+
+transformEmptyFlagStringToNothingVal : Maybe String -> Maybe String
+transformEmptyFlagStringToNothingVal maybeFlag =
+    case maybeFlag of
+        Just flag ->
+            if String.isEmpty flag then
+                Nothing
+
+            else
+                Just flag
+
+        _ ->
+            Nothing
+
+
+flagEnabled : Int -> Int -> Bool
+flagEnabled flag register =
+    Bitwise.and flag register == flag
+
+
+findFirstNothing : List ( Int, Maybe String ) -> Maybe Int
+findFirstNothing list =
+    case list of
+        ( index, maybeVal ) :: rest ->
+            case maybeVal of
+                Just _ ->
+                    findFirstNothing rest
+
+                Nothing ->
+                    Just index
+
+        [] ->
+            Nothing
+
+
+findFlagIndex : List ( Int, Maybe String ) -> String -> Maybe Int
+findFlagIndex list target =
+    case list of
+        ( index, maybeVal ) :: rest ->
+            case maybeVal of
+                Just val ->
+                    if val == target then
+                        Just index
+
+                    else
+                        findFlagIndex rest target
+
+                Nothing ->
+                    findFlagIndex rest target
+
+        [] ->
+            Nothing
+
+
+duplicateFlagsFound : Array String -> Bool
+duplicateFlagsFound rawFlags =
+    let
+        flags : Array String
+        flags =
+            rawFlags
+                |> Array.map sanitizeFlag
+                |> Array.filter (\s -> not (String.isEmpty s))
+
+        uniqueFlags : Set String
+        uniqueFlags =
+            flags
+                |> Array.toList
+                |> Set.fromList
+    in
+    Set.size uniqueFlags /= Array.length flags

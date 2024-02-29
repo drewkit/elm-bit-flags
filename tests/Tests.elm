@@ -214,7 +214,7 @@ testShowEnabledFlagsOnRegister : Test
 testShowEnabledFlagsOnRegister =
     let
         showEnabledFlags =
-            BitFlags.enabledFlags bitFlagSettings
+            enabledFlags bitFlagSettings
     in
     Test.describe "BitFlags.showEnabledFlagsOnRegister"
         [ test "runs"
@@ -303,7 +303,7 @@ testShowAllFlags =
 
 isFlagMatch : Int -> Bool
 isFlagMatch =
-    query bitFlagSettings [ "red", "Red", " blacK", "magenta" ] [ "blue" ]
+    match bitFlagSettings [ "red", "Red", " blacK", "magenta" ] [ "blue" ]
 
 
 testBuiltRegisterQuery : Test

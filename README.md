@@ -31,15 +31,15 @@ sampleRegister =
         |> enableFlag "pickleball" -- #=> 8
         |> enableFlag "tennis" -- #=> 10
     
-query =
-   BF.query settings
+match =
+   BF.match settings
  
-query ["pickleball", "tennis"] [] sampleRegister
+match ["pickleball", "tennis"] [] sampleRegister
 -- True
     
-query ["pickleball"] ["tennis"] sampleRegister
+match ["pickleball"] ["tennis"] sampleRegister
 -- False
 
-query ["backpacking", "tennis"] [] sampleRegister
+match ["backpacking", "tennis"] [] sampleRegister
 -- False
 ```
