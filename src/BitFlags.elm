@@ -1,15 +1,18 @@
 module BitFlags exposing
-    ( BitFlagSettings, initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags
+    ( BitFlagSettings
+    , initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags
     , enableFlag, disableFlag, flipFlag
     , enabledFlags, match
     )
 
 {-| A package for handling Int values as bit flag registers.
 
+@docs BitFlagSettings
+
 
 ## Initializing / Configuring Bit Flag Settings
 
-@docs BitFlagSettings, initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags
+@docs initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags
 
 
 ## Performing Bit Flag operations on registers
@@ -28,16 +31,14 @@ import Bitwise
 import Set exposing (Set)
 
 
+{-| BitFlagSettings type
+-}
 type BitFlagSettings
     = BitFlagSettings (Array (Maybe String))
 
 
-
-{-
-   List all created flags on bit flag settings
+{-| List all created flags on bit flag settings
 -}
-
-
 allFlags : BitFlagSettings -> List String
 allFlags (BitFlagSettings settings) =
     settings
@@ -54,23 +55,15 @@ allFlags (BitFlagSettings settings) =
             []
 
 
-
-{-
-   Default bit flag settings
+{-| Default bit flag settings
 -}
-
-
 defaultSettings : BitFlagSettings
 defaultSettings =
     BitFlagSettings <| Array.initialize 32 (always Nothing)
 
 
-
-{-
-   Initialize bit flag settings
+{-| Initialize bit flag settings
 -}
-
-
 initSettings : { bitLimit : Int, flags : List String } -> Result String BitFlagSettings
 initSettings config =
     let
@@ -101,12 +94,8 @@ initSettings config =
                 (fullBitSpaceFlagArray |> Array.map transformEmptyFlagStringToNothingVal)
 
 
-
-{-
-   Create a flag from the bit flag settings.
+{-| Create a flag from the bit flag settings
 -}
-
-
 createFlag : String -> BitFlagSettings -> Result String BitFlagSettings
 createFlag rawFlag (BitFlagSettings settings) =
     let
@@ -135,12 +124,8 @@ createFlag rawFlag (BitFlagSettings settings) =
                                 Array.set index (Just flag) settings
 
 
-
-{-
-   Update a flag on the bit flag settings.
+{-| Update a flag on the bit flag settings.
 -}
-
-
 updateFlag : String -> String -> BitFlagSettings -> BitFlagSettings
 updateFlag originalRawFlag updatedRawFlag (BitFlagSettings settings) =
     let
@@ -158,12 +143,8 @@ updateFlag originalRawFlag updatedRawFlag (BitFlagSettings settings) =
             BitFlagSettings <| settings
 
 
-
-{-
-   Delete a flag from the bit flag settings.
+{-| Delete a flag from the bit flag settings.
 -}
-
-
 deleteFlag : String -> BitFlagSettings -> BitFlagSettings
 deleteFlag rawFlag (BitFlagSettings settings) =
     let
@@ -180,11 +161,10 @@ deleteFlag rawFlag (BitFlagSettings settings) =
 
 
 -- Register Functions
-{-
-   List all enabled flags on a register.
+
+
+{-| List all enabled flags on a register.
 -}
-
-
 enabledFlags : BitFlagSettings -> Int -> List String
 enabledFlags (BitFlagSettings settings) register =
     List.foldr
@@ -204,12 +184,8 @@ enabledFlags (BitFlagSettings settings) register =
         (Array.toIndexedList settings)
 
 
-
-{-
-   Enable a flag on a register.
+{-| Enable a flag on a register.
 -}
-
-
 enableFlag : BitFlagSettings -> String -> Int -> Int
 enableFlag (BitFlagSettings settings) rawFlag register =
     case findFlagIndex (Array.toIndexedList settings) (sanitizeFlag rawFlag) of
@@ -220,12 +196,8 @@ enableFlag (BitFlagSettings settings) rawFlag register =
             register
 
 
-
-{-
-   Disable a flag on a register.
+{-| Disable a flag on a register.
 -}
-
-
 disableFlag : BitFlagSettings -> String -> Int -> Int
 disableFlag (BitFlagSettings settings) rawFlag register =
     case findFlagIndex (Array.toIndexedList settings) (sanitizeFlag rawFlag) of
@@ -236,12 +208,8 @@ disableFlag (BitFlagSettings settings) rawFlag register =
             register
 
 
-
-{-
-   Flip flag value on a register.
+{-| Flip flag value on a register.
 -}
-
-
 flipFlag : BitFlagSettings -> String -> Int -> Int
 flipFlag (BitFlagSettings settings) rawFlag register =
     case findFlagIndex (Array.toIndexedList settings) (sanitizeFlag rawFlag) of
@@ -252,12 +220,8 @@ flipFlag (BitFlagSettings settings) rawFlag register =
             register
 
 
-
-{-
-   With a whitelist and blacklist of flags, determine if the register is a match
+{-| With a whitelist and blacklist of flags, determine if the register is a match
 -}
-
-
 match : BitFlagSettings -> List String -> List String -> Int -> Bool
 match (BitFlagSettings settings) whitelist blacklist register =
     let
