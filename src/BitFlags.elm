@@ -1,17 +1,20 @@
 module BitFlags exposing
-    ( BitFlagSettings
-    , allFlags
-    , createFlag
-    , defaultSettings
-    , deleteFlag
-    , disableFlag
-    , enableFlag
-    , enabledFlags
-    , flipFlag
-    , initSettings
-    , match
-    , updateFlag
+    ( initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags
+    , enableFlag, disableFlag, flipFlag, match
+    , BitFlagSettings, enabledFlags
     )
+
+{-| BitFlags
+
+Set up Bit Flag Settings:
+
+@docs initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags
+
+Perform Bit Flag operations on registers:
+
+@docs enableFlag, disableFlag, flipFlag, match
+
+-}
 
 import Array exposing (Array)
 import Bitwise
@@ -20,6 +23,12 @@ import Set exposing (Set)
 
 type BitFlagSettings
     = BitFlagSettings (Array (Maybe String))
+
+
+
+{-
+   List all created flags on bit flag settings
+-}
 
 
 allFlags : BitFlagSettings -> List String
@@ -38,9 +47,21 @@ allFlags (BitFlagSettings settings) =
             []
 
 
+
+{-
+   Default bit flag settings
+-}
+
+
 defaultSettings : BitFlagSettings
 defaultSettings =
-    BitFlagSettings <| Array.fromList []
+    BitFlagSettings <| Array.initialize 32 (always Nothing)
+
+
+
+{-
+   Initialize bit flag settings
+-}
 
 
 initSettings : { bitLimit : Int, flags : List String } -> Result String BitFlagSettings
@@ -73,6 +94,12 @@ initSettings config =
                 (fullBitSpaceFlagArray |> Array.map transformEmptyFlagStringToNothingVal)
 
 
+
+{-
+   Create a flag from the bit flag settings.
+-}
+
+
 createFlag : String -> BitFlagSettings -> Result String BitFlagSettings
 createFlag rawFlag (BitFlagSettings settings) =
     let
@@ -101,6 +128,12 @@ createFlag rawFlag (BitFlagSettings settings) =
                                 Array.set index (Just flag) settings
 
 
+
+{-
+   Update a flag on the bit flag settings.
+-}
+
+
 updateFlag : String -> String -> BitFlagSettings -> BitFlagSettings
 updateFlag originalRawFlag updatedRawFlag (BitFlagSettings settings) =
     let
@@ -116,6 +149,12 @@ updateFlag originalRawFlag updatedRawFlag (BitFlagSettings settings) =
 
         Nothing ->
             BitFlagSettings <| settings
+
+
+
+{-
+   Delete a flag from the bit flag settings.
+-}
 
 
 deleteFlag : String -> BitFlagSettings -> BitFlagSettings
@@ -134,6 +173,9 @@ deleteFlag rawFlag (BitFlagSettings settings) =
 
 
 -- Register Functions
+{-
+   List all enabled flags on a register.
+-}
 
 
 enabledFlags : BitFlagSettings -> Int -> List String
