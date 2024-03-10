@@ -1,6 +1,6 @@
 module BitFlags exposing
     ( BitFlagSettings
-    , initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags
+    , initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags, serialize
     , enableFlag, disableFlag, flipFlag
     , enabledFlags, match
     )
@@ -12,7 +12,7 @@ module BitFlags exposing
 
 ## Initializing / Configuring Bit Flag Settings
 
-@docs initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags
+@docs initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags, serialize
 
 
 ## Performing Bit Flag operations on registers
@@ -37,6 +37,11 @@ type BitFlagSettings
     = BitFlagSettings (Array (Maybe String))
 
 
+maxFlagSpace : Int
+maxFlagSpace =
+    32
+
+
 {-| List all created flags on bit flag settings
 -}
 allFlags : BitFlagSettings -> List String
@@ -57,9 +62,14 @@ allFlags (BitFlagSettings settings) =
 
 {-| Default bit flag settings
 -}
-defaultSettings : BitFlagSettings
-defaultSettings =
-    BitFlagSettings <| Array.initialize 32 (always Nothing)
+defaultSettings : Int -> BitFlagSettings
+defaultSettings flagSpaceInput =
+    let
+        flagSpaceSize : Int
+        flagSpaceSize =
+            Maybe.withDefault maxFlagSpace <| List.minimum [ flagSpaceInput, maxFlagSpace ]
+    in
+    BitFlagSettings <| Array.initialize flagSpaceSize (always Nothing)
 
 
 {-| Initialize bit flag settings
@@ -76,8 +86,8 @@ initSettings config =
     if duplicateFlagsFound flagsWithEmptyBitSpaces then
         Err "Duplicate flags detected"
 
-    else if config.bitLimit > 32 then
-        Err "bitLimit cannot exceed 32 bits"
+    else if config.bitLimit > maxFlagSpace then
+        Err ("bitLimit cannot exceed " ++ String.fromInt maxFlagSpace ++ " bits")
 
     else if Array.length flagsWithEmptyBitSpaces > config.bitLimit then
         Err "Flags list exceeds bit space limit"
@@ -157,6 +167,15 @@ deleteFlag rawFlag (BitFlagSettings settings) =
 
         Nothing ->
             BitFlagSettings <| settings
+
+
+{-| Serialize bit flag settings.
+-}
+serialize : BitFlagSettings -> List String
+serialize (BitFlagSettings settings) =
+    settings
+        |> Array.map (Maybe.withDefault "")
+        |> Array.toList
 
 
 

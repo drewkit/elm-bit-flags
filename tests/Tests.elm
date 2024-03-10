@@ -57,7 +57,7 @@ bitFlagSettings =
                 , flags = rawFlags
                 }
     in
-    Result.withDefault defaultSettings settingsResult
+    Result.withDefault (defaultSettings 20) settingsResult
 
 
 testCreateFlag : Test
@@ -336,5 +336,24 @@ testBuiltRegisterQuery =
         , test "fails simply because it doesn't include red (the 1 bit space)"
             (\_ ->
                 Expect.equal False (isFlagMatch 58220)
+            )
+        ]
+
+
+testSerializeFlagSpace : Test
+testSerializeFlagSpace =
+    Test.describe "BitFlags.serialize"
+        [ test "Provides a list of current bit flag space that can be inputted to a subsequent initSettings"
+            (\_ ->
+                let
+                    inputList =
+                        [ "", "red fish", "", "blue fish", "" ]
+                in
+                Expect.equal
+                    inputList
+                    (initSettings { bitLimit = 5, flags = inputList }
+                        |> Result.andThen (\setting -> Ok (BitFlags.serialize setting))
+                        |> Result.withDefault []
+                    )
             )
         ]
