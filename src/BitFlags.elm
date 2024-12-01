@@ -2,7 +2,7 @@ module BitFlags exposing
     ( BitFlagSettings
     , initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags, serialize
     , enableFlag, disableFlag, flipFlag
-    , enabledFlags, match
+    , enabledFlags, match, genRegister, genSet
     )
 
 {-| A package for handling Int values as bit flag registers.
@@ -15,14 +15,14 @@ module BitFlags exposing
 @docs initSettings, defaultSettings, createFlag, updateFlag, deleteFlag, allFlags, serialize
 
 
-## Performing Bit Flag operations on registers
+## Performing Bitwise operations on registers
 
 @docs enableFlag, disableFlag, flipFlag
 
 
 ## Investigate registers
 
-@docs enabledFlags, match
+@docs enabledFlags, match, genRegister, genSet
 
 -}
 
