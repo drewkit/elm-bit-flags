@@ -227,6 +227,21 @@ disableFlag (BitFlagSettings settings) rawFlag register =
             register
 
 
+{-| Generate a register based on a set of flags
+-}
+genRegister : BitFlagSettings -> Set String -> Int
+genRegister bfSettings rawFlagSet =
+    Set.foldl (\flag acc -> enableFlag bfSettings flag acc) 0 rawFlagSet
+
+
+{-| Generate a flag set based on register
+-}
+genSet : BitFlagSettings -> Int -> Set String
+genSet bfSettings register =
+    enabledFlags bfSettings register
+        |> Set.fromList
+
+
 {-| Flip flag value on a register.
 -}
 flipFlag : BitFlagSettings -> String -> Int -> Int
